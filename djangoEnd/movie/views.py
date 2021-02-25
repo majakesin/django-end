@@ -1,16 +1,18 @@
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import render
 
 # Create your views here.
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rest_framework import mixins
-
+from rest_framework import mixins, status
 from .filters import MovieFilter
-from .models import Movie, Genre
+from .models import Movie, Genre, LikeDislikeOption
 from .serializers import MovieSerializer, GenreSerializer
+from djangoEnd.jwtAuthentication.backends import JWTAuthentication
 
 
 class PaginationMovie(PageNumberPagination):
@@ -24,8 +26,44 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
     serializer_class = GenreSerializer
 
 
-class MovieView(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class MovieView(mixins.ListModelMixin,
+                mixins.RetrieveModelMixin,
+                mixins.CreateModelMixin,
+                mixins.UpdateModelMixin,
+                GenericViewSet):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
+
     pagination_class = PaginationMovie
     filter_class = MovieFilter
+
+
+class LikeDislikeView(GenericAPIView):
+    permission_classes = [AllowAny]
+    queryset = LikeDislikeOption.objects.all()
+
+    def post(self, request):
+        data = request.data;
+        user, token = JWTAuthentication.authenticate(self, request)
+
+        if not LikeDislikeOption.objects.filter(user_id=user, movie_id=data['movie_id']).exists():
+            ld = LikeDislikeOption()
+            ld.movie_id = data['movie_id']
+            ld.type = data['type']
+            ld.user_id = user
+            ld.save()
+            return Response(data, status=status.HTTP_200_OK)
+
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def get(self, request):
+        movie_id = request.GET['movie_id']
+        likeList = LikeDislikeOption.objects.filter(movie_id=movie_id, type=True)
+        dislikeList = LikeDislikeOption.objects.filter(movie_id=movie_id, type=False)
+
+        data = {
+            'likes': likeList.count(),
+            'dislikes': dislikeList.count()
+        }
+
+        return Response(data, status=status.HTTP_200_OK)

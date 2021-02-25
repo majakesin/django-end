@@ -17,7 +17,7 @@ class Movie(models.Model):
     description = models.CharField(max_length=40)
     cover_image = models.ImageField(upload_to=upload_path, blank=True)
     genres = models.ManyToManyField(Genre)
-
+    number_of_views = models.IntegerField(default=0)
 
 class LikeDislikeOption(models.Model):
     movie_id = models.IntegerField()

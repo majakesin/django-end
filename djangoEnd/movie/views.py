@@ -37,6 +37,14 @@ class MovieView(mixins.ListModelMixin,
     pagination_class = PaginationMovie
     filter_class = MovieFilter
 
+    def retrieve(self, request, *args, **kwargs):
+        id_movie = kwargs['pk']
+        movie = Movie.objects.get(id=id_movie)
+        movie.number_of_views = movie.number_of_views + 1
+        movie.save()
+        serializer = MovieSerializer(movie)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class LikeDislikeView(GenericAPIView):
     permission_classes = [AllowAny]

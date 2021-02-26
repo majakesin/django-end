@@ -19,8 +19,19 @@ class Movie(models.Model):
     genres = models.ManyToManyField(Genre)
     number_of_views = models.IntegerField(default=0)
 
+
+class Comments(models.Model):
+    title = models.CharField(max_length=20)
+    description = models.CharField(max_length=500)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+
+
 class LikeDislikeOption(models.Model):
     movie_id = models.IntegerField()
     type = models.BooleanField()
     user_id = models.EmailField()
 
+
+class WatchedMovies(models.Model):
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)

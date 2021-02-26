@@ -10,13 +10,19 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
 from .filters import MovieFilter
-from .models import Movie, Genre, LikeDislikeOption
-from .serializers import MovieSerializer, GenreSerializer
+from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
+from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
 
 
 class PaginationMovie(PageNumberPagination):
     page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 10000
+
+
+class CommentsPagination(PageNumberPagination):
+    page_size = 4
     page_size_query_param = 'page_size'
     max_page_size = 10000
 
@@ -44,6 +50,21 @@ class MovieView(mixins.ListModelMixin,
         movie.save()
         serializer = MovieSerializer(movie)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CommentsView(mixins.ListModelMixin,
+                   mixins.RetrieveModelMixin,
+                   mixins.CreateModelMixin, GenericViewSet):
+    queryset = Comments.objects.all()
+    serializer_class = CommentsSerializer
+    pagination_class = CommentsPagination
+
+    def get_queryset(self):
+        id_movie = self.request.GET['movie']
+
+        if id_movie:
+            return Comments.objects.filter(movie=id_movie)
+        return Comments.objects()
 
 
 class LikeDislikeView(GenericAPIView):
@@ -75,3 +96,20 @@ class LikeDislikeView(GenericAPIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class WatchedMovieView(mixins.ListModelMixin,
+                       mixins.RetrieveModelMixin,
+                       mixins.CreateModelMixin, GenericViewSet):
+    queryset = WatchedMovies.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        movie_id = request.data['movie_id']
+        movie = Movie.objects.get(id=movie_id)
+        username, token = JWTAuthentication.authenticate(self, request)
+        user = User.objects.get(username=username)
+        watchedMovie = WatchedMovies()
+        watchedMovie.movie = movie
+        watchedMovie.user = user
+        watchedMovie.save()
+        return Response(status=status.HTTP_200_OK)

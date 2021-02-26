@@ -18,12 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 
 import settings
-from movie.views import LikeDislikeView
+from movie.views import LikeDislikeView, RelatedMoviesView
 from movie.routerMovie import routerMovie
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('jwtAuthentication.urls')),
     path('api/movies/', include(routerMovie.urls)),
-    path('api/movies/like/', LikeDislikeView.as_view())
+    path('api/movies/like/', LikeDislikeView.as_view()),
 ]+ static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)

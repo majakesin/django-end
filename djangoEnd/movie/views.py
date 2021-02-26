@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
 from .filters import MovieFilter
-from .models import Movie, Genre, LikeDislikeOption, Comments
+from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
 
@@ -96,3 +96,20 @@ class LikeDislikeView(GenericAPIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class WatchedMovieView(mixins.ListModelMixin,
+                       mixins.RetrieveModelMixin,
+                       mixins.CreateModelMixin, GenericViewSet):
+    queryset = WatchedMovies.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        movie_id = request.data['movie_id']
+        movie = Movie.objects.get(id=movie_id)
+        username, token = JWTAuthentication.authenticate(self, request)
+        user = User.objects.get(username=username)
+        watchedMovie = WatchedMovies()
+        watchedMovie.movie = movie
+        watchedMovie.user = user
+        watchedMovie.save()
+        return Response(status=status.HTTP_200_OK)

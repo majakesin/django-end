@@ -1,5 +1,7 @@
+from django_elasticsearch_dsl_drf.serializers import DocumentSerializer
 from rest_framework import serializers
 
+from .documents.movie import MovieDocument
 from .models import Movie, Genre, Comments, WatchedMovies, LikeDislikeOption
 
 
@@ -57,3 +59,13 @@ class WatchedMovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = WatchedMovies
         fields = '__all__'
+
+class MovieElasticSearchSerializer(DocumentSerializer):
+    class Meta(object):
+        document = MovieDocument
+        fields = (
+            'id',
+            'title',
+            'description',
+
+        )

@@ -62,9 +62,22 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'jwtAuthentication',
     'corsheaders',
+    'django_elasticsearch_dsl',
+    'django_elasticsearch_dsl_drf',
     'django_filters',
     'movie',
 ]
+#for elastic search
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'localhost:9200'
+    },
+}
+
+ELASTICSEARCH_INDEX_NAMES = {
+    'movie.documents.movie': 'movie',
+
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

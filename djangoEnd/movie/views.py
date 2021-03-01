@@ -1,22 +1,28 @@
 from django.contrib.auth.models import User
-from django.db.models import Q
-from django.shortcuts import render
 
 # Create your views here.
+from django.core.mail import EmailMessage
+from django_elasticsearch_dsl_drf.constants import LOOKUP_FILTER_TERMS, LOOKUP_FILTER_PREFIX, LOOKUP_FILTER_WILDCARD, \
+    LOOKUP_QUERY_IN, LOOKUP_QUERY_EXCLUDE, LOOKUP_FILTER_RANGE, LOOKUP_QUERY_GT, LOOKUP_QUERY_GTE, LOOKUP_QUERY_LT, \
+    LOOKUP_QUERY_LTE
+from django_elasticsearch_dsl_drf.filter_backends import FilteringFilterBackend, IdsFilterBackend, \
+    OrderingFilterBackend, DefaultOrderingFilterBackend, SearchFilterBackend
+from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
+
+from .documents.movie import MovieDocument
 from .filters import MovieFilter
 from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
-    MovieRelatedSerializer
-from djangoEnd.jwtAuthentication.backends import JWTAuthentication
-from django.core.mail import EmailMessage
+    MovieRelatedSerializer, MovieElasticSearchSerializer
+#from djangoEnd.jwtAuthentication.backends import JWTAuthentication
 
-from djangoEnd import settings
+#from djangoEnd import settings
 
 
 class PaginationMovie(PageNumberPagination):
@@ -36,10 +42,10 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
     serializer_class = GenreSerializer
 
 
-def send_email_fun(subject, content, email_to):
-    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, email_to)
-    email.fail_silenty = False
-    email.send()
+#def send_email_fun(subject, content, email_to):
+ #   email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, email_to)
+  #  email.fail_silenty = False
+   # email.send()
 
 
 class MovieView(mixins.ListModelMixin,
@@ -60,7 +66,7 @@ class MovieView(mixins.ListModelMixin,
         cover_image = request.FILES['cover_image']
         admin = User.objects.get(is_superuser=1)
         content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
-        send_email_fun("Created new movie", content, admin)
+    #    send_email_fun("Created new movie", content, admin)
         # mora ovako, jer nece vezu vise na vise da sacuva bez id filma,pa se on mora prvi sacuvati,pa
         # tek onda dodati zanrovi
         movieSave = Movie(title=title, description=description, cover_image=cover_image)
@@ -110,13 +116,13 @@ class LikeDislikeView(GenericAPIView):
 
     def post(self, request):
         data = request.data;
-        user, token = JWTAuthentication.authenticate(self, request)
+     #   user, token = JWTAuthentication.authenticate(self, request)
 
         if not LikeDislikeOption.objects.filter(user_id=user, movie_id=data['movie_id']).exists():
             ld = LikeDislikeOption()
             ld.movie_id = data['movie_id']
             ld.type = data['type']
-            ld.user_id = user
+      #      ld.user_id = user
             ld.save()
             return Response(data, status=status.HTTP_200_OK)
 
@@ -143,10 +149,68 @@ class WatchedMovieView(mixins.ListModelMixin,
     def create(self, request, *args, **kwargs):
         movie_id = request.data['movie_id']
         movie = Movie.objects.get(id=movie_id)
-        username, token = JWTAuthentication.authenticate(self, request)
-        user = User.objects.get(username=username)
+       # username, token = JWTAuthentication.authenticate(self, request)
+        #user = User.objects.get(username=username)
         watchedMovie = WatchedMovies()
         watchedMovie.movie = movie
-        watchedMovie.user = user
+        #watchedMovie.user = user
         watchedMovie.save()
         return Response(status=status.HTTP_200_OK)
+
+
+# primer za elasticsearch
+class MovieElasticSearchView(BaseDocumentViewSet):
+    document = MovieDocument
+    serializer_class = MovieElasticSearchSerializer
+    lookup_field = 'id'
+    pagination_class = PaginationMovie
+
+    filter_backends = [
+        FilteringFilterBackend,
+        IdsFilterBackend,
+        OrderingFilterBackend,
+        DefaultOrderingFilterBackend,
+        SearchFilterBackend,
+    ]
+
+    search_fields = (
+        'title',
+        'description',
+        'genres',
+    )
+
+    filter_fields = {
+        'id': {
+            'field': 'id',
+            'lookups': [
+                LOOKUP_FILTER_RANGE,
+                LOOKUP_QUERY_IN,
+                LOOKUP_QUERY_GT,
+                LOOKUP_QUERY_GTE,
+                LOOKUP_QUERY_LT,
+                LOOKUP_QUERY_LTE,
+            ],
+        },
+        'title': 'title.raw',
+        'description': 'description.raw',
+
+        'genres': {
+            'field': 'genres',
+
+            'lookups': [
+                LOOKUP_FILTER_TERMS,
+                LOOKUP_FILTER_PREFIX,
+                LOOKUP_FILTER_WILDCARD,
+                LOOKUP_QUERY_IN,
+                LOOKUP_QUERY_EXCLUDE,
+            ],
+        },
+
+
+    }
+    ordering_fields = {
+        'id': 'id',
+        'title': 'title.raw',
+        'description': 'description.raw',
+    }
+    ordering =('id',)

@@ -36,6 +36,12 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
     serializer_class = GenreSerializer
 
 
+def send_email_fun(subject, content, email_to):
+    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, email_to)
+    email.fail_silenty = False
+    email.send()
+
+
 class MovieView(mixins.ListModelMixin,
                 mixins.RetrieveModelMixin,
                 mixins.CreateModelMixin,
@@ -54,13 +60,10 @@ class MovieView(mixins.ListModelMixin,
         cover_image = request.FILES['cover_image']
         admin = User.objects.get(is_superuser=1)
         content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
-        email = EmailMessage('Created new movie',
-                             content, settings.EMAIL_HOST_USER, [admin.email])
-        email.fail_silenty = False
-        email.send()
+        send_email_fun("Created new movie", content, admin)
         # mora ovako, jer nece vezu vise na vise da sacuva bez id filma,pa se on mora prvi sacuvati,pa
-        #tek onda dodati zanrovi
-        movieSave = Movie(title=title,description =description, cover_image =cover_image)
+        # tek onda dodati zanrovi
+        movieSave = Movie(title=title, description=description, cover_image=cover_image)
         movieSave.save()
         movieSave.genres.set(genres)
         movieSave.save()

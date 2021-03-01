@@ -11,7 +11,8 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
 from .filters import MovieFilter
 from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
-from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer
+from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
+    MovieRelatedSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
 
 
@@ -48,8 +49,20 @@ class MovieView(mixins.ListModelMixin,
         movie = Movie.objects.get(id=id_movie)
         movie.number_of_views = movie.number_of_views + 1
         movie.save()
-        serializer = MovieSerializer(movie)
+        serializer = MovieRelatedSerializer(movie)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MoviePopularView(mixins.ListModelMixin, GenericViewSet):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializerPopular
+
+
+class RelatedMoviesView(GenericViewSet,mixins.ListModelMixin,):
+    queryset = Movie.objects.all()
+    serializer_class = MovieRelatedSerializer
+    filter_class = MovieFilter
+
 
 
 class CommentsView(mixins.ListModelMixin,
@@ -102,6 +115,8 @@ class WatchedMovieView(mixins.ListModelMixin,
                        mixins.RetrieveModelMixin,
                        mixins.CreateModelMixin, GenericViewSet):
     queryset = WatchedMovies.objects.all()
+
+
 
     def create(self, request, *args, **kwargs):
         movie_id = request.data['movie_id']

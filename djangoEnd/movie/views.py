@@ -14,6 +14,9 @@ from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
     MovieRelatedSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
+from django.core.mail import EmailMessage
+
+from djangoEnd import settings
 
 
 class PaginationMovie(PageNumberPagination):
@@ -33,6 +36,12 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
     serializer_class = GenreSerializer
 
 
+def send_email_fun(subject, content, email_to):
+    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, email_to)
+    email.fail_silenty = False
+    email.send()
+
+
 class MovieView(mixins.ListModelMixin,
                 mixins.RetrieveModelMixin,
                 mixins.CreateModelMixin,
@@ -43,6 +52,22 @@ class MovieView(mixins.ListModelMixin,
 
     pagination_class = PaginationMovie
     filter_class = MovieFilter
+
+    def create(self, request, *args, **kwargs):
+        title = request.POST['title']
+        description = request.POST['description']
+        genres = request.POST['genres']
+        cover_image = request.FILES['cover_image']
+        admin = User.objects.get(is_superuser=1)
+        content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
+        send_email_fun("Created new movie", content, admin)
+        # mora ovako, jer nece vezu vise na vise da sacuva bez id filma,pa se on mora prvi sacuvati,pa
+        # tek onda dodati zanrovi
+        movieSave = Movie(title=title, description=description, cover_image=cover_image)
+        movieSave.save()
+        movieSave.genres.set(genres)
+        movieSave.save()
+        return Response(status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
         id_movie = kwargs['pk']
@@ -58,11 +83,10 @@ class MoviePopularView(mixins.ListModelMixin, GenericViewSet):
     serializer_class = MovieSerializerPopular
 
 
-class RelatedMoviesView(GenericViewSet,mixins.ListModelMixin,):
+class RelatedMoviesView(GenericViewSet, mixins.ListModelMixin, ):
     queryset = Movie.objects.all()
     serializer_class = MovieRelatedSerializer
     filter_class = MovieFilter
-
 
 
 class CommentsView(mixins.ListModelMixin,
@@ -115,8 +139,6 @@ class WatchedMovieView(mixins.ListModelMixin,
                        mixins.RetrieveModelMixin,
                        mixins.CreateModelMixin, GenericViewSet):
     queryset = WatchedMovies.objects.all()
-
-
 
     def create(self, request, *args, **kwargs):
         movie_id = request.data['movie_id']

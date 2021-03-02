@@ -1,20 +1,26 @@
 from django.contrib.auth.models import User
-from django.db.models import Q
-from django.shortcuts import render
 
 # Create your views here.
+from django.core.mail import EmailMessage
+from django_elasticsearch_dsl_drf.constants import LOOKUP_FILTER_TERMS, LOOKUP_FILTER_PREFIX, LOOKUP_FILTER_WILDCARD, \
+    LOOKUP_QUERY_IN, LOOKUP_QUERY_EXCLUDE, LOOKUP_FILTER_RANGE, LOOKUP_QUERY_GT, LOOKUP_QUERY_GTE, LOOKUP_QUERY_LT, \
+    LOOKUP_QUERY_LTE
+from django_elasticsearch_dsl_drf.filter_backends import FilteringFilterBackend, IdsFilterBackend, \
+    OrderingFilterBackend, DefaultOrderingFilterBackend, SearchFilterBackend
+from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
+
+from .documents.movie import MovieDocument
 from .filters import MovieFilter
 from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
-    MovieRelatedSerializer
+    MovieRelatedSerializer, MovieElasticSearchSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
-from django.core.mail import EmailMessage
 
 from djangoEnd import settings
 
@@ -61,8 +67,6 @@ class MovieView(mixins.ListModelMixin,
         admin = User.objects.get(is_superuser=1)
         content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
         send_email_fun("Created new movie", content, admin)
-        # mora ovako, jer nece vezu vise na vise da sacuva bez id filma,pa se on mora prvi sacuvati,pa
-        # tek onda dodati zanrovi
         movieSave = Movie(title=title, description=description, cover_image=cover_image)
         movieSave.save()
         movieSave.genres.set(genres)
@@ -150,3 +154,60 @@ class WatchedMovieView(mixins.ListModelMixin,
         watchedMovie.user = user
         watchedMovie.save()
         return Response(status=status.HTTP_200_OK)
+
+
+class MovieElasticSearchView(BaseDocumentViewSet):
+    document = MovieDocument
+    serializer_class = MovieElasticSearchSerializer
+    lookup_field = 'id'
+    pagination_class = PaginationMovie
+
+    filter_backends = [
+        FilteringFilterBackend,
+        IdsFilterBackend,
+        OrderingFilterBackend,
+        DefaultOrderingFilterBackend,
+        SearchFilterBackend,
+    ]
+
+    search_fields = (
+        'title',
+        'description',
+        'genres',
+    )
+
+    filter_fields = {
+        'id': {
+            'field': 'id',
+            'lookups': [
+                LOOKUP_FILTER_RANGE,
+                LOOKUP_QUERY_IN,
+                LOOKUP_QUERY_GT,
+                LOOKUP_QUERY_GTE,
+                LOOKUP_QUERY_LT,
+                LOOKUP_QUERY_LTE,
+            ],
+        },
+        'title': 'title.raw',
+        'description': 'description.raw',
+
+        'genres': {
+            'field': 'genres',
+
+            'lookups': [
+                LOOKUP_FILTER_TERMS,
+                LOOKUP_FILTER_PREFIX,
+                LOOKUP_FILTER_WILDCARD,
+                LOOKUP_QUERY_IN,
+                LOOKUP_QUERY_EXCLUDE,
+            ],
+        },
+
+
+    }
+    ordering_fields = {
+        'id': 'id',
+        'title': 'title.raw',
+        'description': 'description.raw',
+    }
+    ordering =('id',)

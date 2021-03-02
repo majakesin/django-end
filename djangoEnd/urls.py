@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 import settings
-from movie.views import LikeDislikeView, RelatedMoviesView
+from movie.views import LikeDislikeView
 from movie.routerMovie import routerMovie
 
 urlpatterns = [

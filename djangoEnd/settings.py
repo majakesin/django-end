@@ -44,6 +44,10 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 
 }
+
+
+
+
 # email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -66,6 +70,7 @@ INSTALLED_APPS = [
     'django_elasticsearch_dsl_drf',
     'django_filters',
     'movie',
+    'django_celery_results',
 ]
 #for elastic search
 ELASTICSEARCH_DSL = {
@@ -73,6 +78,8 @@ ELASTICSEARCH_DSL = {
         'hosts': 'localhost:9200'
     },
 }
+
+CELERY_RESULT_BACKEND = 'django-db'
 
 ELASTICSEARCH_INDEX_NAMES = {
     'movie.documents.movie': 'movie',

@@ -2,12 +2,6 @@ from django.contrib.auth.models import User
 
 # Create your views here.
 from django.core.mail import EmailMessage
-from django_elasticsearch_dsl_drf.constants import LOOKUP_FILTER_TERMS, LOOKUP_FILTER_PREFIX, LOOKUP_FILTER_WILDCARD, \
-    LOOKUP_QUERY_IN, LOOKUP_QUERY_EXCLUDE, LOOKUP_FILTER_RANGE, LOOKUP_QUERY_GT, LOOKUP_QUERY_GTE, LOOKUP_QUERY_LT, \
-    LOOKUP_QUERY_LTE
-from django_elasticsearch_dsl_drf.filter_backends import FilteringFilterBackend, IdsFilterBackend, \
-    OrderingFilterBackend, DefaultOrderingFilterBackend, SearchFilterBackend
-from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
@@ -15,13 +9,12 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
 
-from .documents.movie import MovieDocument
+
 from .filters import MovieFilter
 from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
-    MovieRelatedSerializer, MovieElasticSearchSerializer
+    MovieRelatedSerializer
 from djangoEnd.jwtAuthentication.backends import JWTAuthentication
-
 from djangoEnd import settings
 
 
@@ -43,7 +36,7 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
 
 
 def send_email_fun(subject, content, email_to):
-    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, email_to)
+    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, [email_to,])
     email.fail_silenty = False
     email.send()
 
@@ -63,14 +56,19 @@ class MovieView(mixins.ListModelMixin,
         title = request.POST['title']
         description = request.POST['description']
         genres = request.POST['genres']
-        cover_image = request.FILES['cover_image']
-        admin = User.objects.get(is_superuser=1)
-        content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
-        send_email_fun("Created new movie", content, admin)
-        movieSave = Movie(title=title, description=description, cover_image=cover_image)
+        movieSave = Movie(title=title, description=description)
         movieSave.save()
         movieSave.genres.set(genres)
+        if request.POST['cover_image']:
+            movieSave.image_url_omdb = request.POST['cover_image']
+        else:
+            movieSave.cover_image.set(request.FILES['cover_image'])
+
         movieSave.save()
+
+        admin = User.objects.get(is_superuser=1)
+        content = f"New movie has been created. Movie title is: {title} Movie description is: {description}"
+        send_email_fun("Created new movie", content, admin.email)
         return Response(status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
@@ -156,58 +154,58 @@ class WatchedMovieView(mixins.ListModelMixin,
         return Response(status=status.HTTP_200_OK)
 
 
-class MovieElasticSearchView(BaseDocumentViewSet):
-    document = MovieDocument
-    serializer_class = MovieElasticSearchSerializer
-    lookup_field = 'id'
-    pagination_class = PaginationMovie
+#class MovieElasticSearchView(BaseDocumentViewSet):
+ #   document = MovieDocument
+  #  serializer_class = MovieElasticSearchSerializer
+   # lookup_field = 'id'
+   # pagination_class = PaginationMovie
 
-    filter_backends = [
-        FilteringFilterBackend,
-        IdsFilterBackend,
-        OrderingFilterBackend,
-        DefaultOrderingFilterBackend,
-        SearchFilterBackend,
-    ]
+   # filter_backends = [
+    #    FilteringFilterBackend,
+     #   IdsFilterBackend,
+      #  OrderingFilterBackend,
+       # DefaultOrderingFilterBackend,
+       # SearchFilterBackend,
+   # ]
 
-    search_fields = (
-        'title',
-        'description',
-        'genres',
-    )
+    #search_fields = (
+     #   'title',
+      #  'description',
+       # 'genres',
+    #)
 
-    filter_fields = {
-        'id': {
-            'field': 'id',
-            'lookups': [
-                LOOKUP_FILTER_RANGE,
-                LOOKUP_QUERY_IN,
-                LOOKUP_QUERY_GT,
-                LOOKUP_QUERY_GTE,
-                LOOKUP_QUERY_LT,
-                LOOKUP_QUERY_LTE,
-            ],
-        },
-        'title': 'title.raw',
-        'description': 'description.raw',
+    #filter_fields = {
+     #   'id': {
+      #      'field': 'id',
+       #     'lookups': [
+        #        LOOKUP_FILTER_RANGE,
+         #       LOOKUP_QUERY_IN,
+          #      LOOKUP_QUERY_GT,
+           #     LOOKUP_QUERY_GTE,
+            #    LOOKUP_QUERY_LT,
+             #   LOOKUP_QUERY_LTE,
+           # ],
+       # },
+       # 'title': 'title.raw',
+       # 'description': 'description.raw',
 
-        'genres': {
-            'field': 'genres',
+        #'genres': {
+         #   'field': 'genres',
 
-            'lookups': [
-                LOOKUP_FILTER_TERMS,
-                LOOKUP_FILTER_PREFIX,
-                LOOKUP_FILTER_WILDCARD,
-                LOOKUP_QUERY_IN,
-                LOOKUP_QUERY_EXCLUDE,
-            ],
-        },
+          #  'lookups': [
+           #     LOOKUP_FILTER_TERMS,
+            #    LOOKUP_FILTER_PREFIX,
+             #   LOOKUP_FILTER_WILDCARD,
+             #   LOOKUP_QUERY_IN,
+              #  LOOKUP_QUERY_EXCLUDE,
+           # ],
+       # },
 
 
-    }
-    ordering_fields = {
-        'id': 'id',
-        'title': 'title.raw',
-        'description': 'description.raw',
-    }
-    ordering =('id',)
+   # }
+  #  ordering_fields = {
+    #    'id': 'id',
+    #    'title': 'title.raw',
+     #   'description': 'description.raw',
+   # }
+   # ordering =('id',)

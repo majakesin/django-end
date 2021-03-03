@@ -17,8 +17,9 @@ def upload_path(instance, filename):
 
 class Movie(models.Model):
     title = models.CharField(max_length=20)
-    description = models.CharField(max_length=40)
+    description = models.CharField(max_length=600)
     cover_image = models.ImageField(upload_to=upload_path, blank=True)
+    image_url_omdb = models.CharField(max_length=1000, null=True)
     genres = models.ManyToManyField(Genre)
     number_of_views = models.IntegerField(default=0)
 

@@ -30,7 +30,7 @@ class MovieSerializerPopular(serializers.ModelSerializer, LikedMoviesSerializer)
 class MovieRelatedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = ('id', 'title', 'description', 'cover_image', 'genres'
+        fields = ('id', 'title', 'description', 'cover_image', 'genres','image_url_omdb'
                   )
 
 
@@ -40,7 +40,7 @@ class MovieSerializer(serializers.ModelSerializer, MovieWatchedSerializer, Liked
     class Meta:
         model = Movie
         fields = ('id', 'title', 'description', 'cover_image', 'genres',
-                  'number_of_views', 'watched')
+                  'number_of_views', 'watched','image_url_omdb')
 
 
 class GenreSerializer(serializers.ModelSerializer):

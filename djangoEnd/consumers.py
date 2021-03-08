@@ -19,11 +19,13 @@ class MovieConsumer(WebsocketConsumer):
         async_to_sync(self.channel_layer.group_discard)("movie", self.channel_name)
 
     def receive(self, text_data):
-        type = json.loads(text_data)
+        data = json.loads(text_data)
+        type = data["type"].split("_")[1]
+
         async_to_sync(self.channel_layer.group_send)(
             "movie",
             {
-                "type": "movie." + type["type"],
+                "type": "movie." + type,
                 "text": text_data,
             },
         )

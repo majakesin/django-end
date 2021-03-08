@@ -12,12 +12,12 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from pathlib import Path
 import pymysql
+
 pymysql.version_info = (1, 4, 6, 'final', 0)
 pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
@@ -30,8 +30,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-#JWT
+# JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'jwtAuthentication.backends.JWTAuthentication',
@@ -45,9 +44,6 @@ REST_FRAMEWORK = {
 
 }
 
-
-
-
 # email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -58,21 +54,24 @@ EMAIL_HOST_PASSWORD = 'movies_1234'
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.contenttypes',
     'django.contrib.admin',
     'django.contrib.auth',
-    'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'jwtAuthentication',
+    'movie',
     'corsheaders',
     'django_elasticsearch_dsl',
     'django_elasticsearch_dsl_drf',
     'django_filters',
-    'movie',
+    'channels',
     'django_celery_results',
 ]
-#for elastic search
+
+
+# for elastic search
 ELASTICSEARCH_DSL = {
     'default': {
         'hosts': 'localhost:9200'
@@ -98,7 +97,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ORIGIN_WHITELIST = (
-  'http://localhost:3000',
+    'http://localhost:3000',
 )
 # CORS Config
 CORS_ORIGIN_ALLOW_ALL = True
@@ -122,7 +121,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'wsgi.application'
+ASGI_APPLICATION = 'asgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
@@ -130,14 +138,13 @@ WSGI_APPLICATION = 'wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME','database_movie'),
-        'USER': os.getenv('DB_USER','root'),
-        'PASSWORD': os.getenv('DB_PASSWORD','root'),
+        'NAME': os.getenv('DB_NAME', 'database_movie'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'root'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT',3306),
+        'PORT': os.getenv('DB_PORT', 3306),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -157,7 +164,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
@@ -171,8 +177,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-
-#JWT SECRET KEY also,hide from git :)
+# JWT SECRET KEY also,hide from git :)
 
 JWT_SECRET_KEY = 'secret_key123'
 

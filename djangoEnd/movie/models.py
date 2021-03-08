@@ -7,12 +7,18 @@ from django.utils.translation import ugettext, ugettext_lazy as _
 from six import python_2_unicode_compatible
 
 
-class Genre(models.Model):
-    type = models.CharField(max_length=20)
-
-
 def upload_path(instance, filename):
     return '/'.join(['cover_images', str(instance.title), filename])
+
+
+class LikeDislikeOption(models.Model):
+    movie_id = models.IntegerField()
+    type = models.BooleanField()
+    user_id = models.EmailField()
+
+
+class Genre(models.Model):
+    type = models.CharField(max_length=20)
 
 
 class Movie(models.Model):
@@ -28,12 +34,6 @@ class Comments(models.Model):
     title = models.CharField(max_length=20)
     description = models.CharField(max_length=500)
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-
-
-class LikeDislikeOption(models.Model):
-    movie_id = models.IntegerField()
-    type = models.BooleanField()
-    user_id = models.EmailField()
 
 
 class WatchedMovies(models.Model):

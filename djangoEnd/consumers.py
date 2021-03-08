@@ -19,13 +19,17 @@ class MovieConsumer(WebsocketConsumer):
         async_to_sync(self.channel_layer.group_discard)("movie", self.channel_name)
 
     def receive(self, text_data):
+        type = json.loads(text_data)
         async_to_sync(self.channel_layer.group_send)(
             "movie",
             {
-                "type": "movie.message",
+                "type": "movie." + type["type"],
                 "text": text_data,
             },
         )
 
-    def movie_message(self, event):
+    def movie_comment(self, event):
+        self.send(text_data=event["text"])
+
+    def movie_like(self,event):
         self.send(text_data=event["text"])

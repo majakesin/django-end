@@ -12,7 +12,6 @@ class MovieConsumer(WebsocketConsumer):
 
     def connect(self):
         self.accept()
-        print("bio sam ovde,pokusao da sam se konektujem :)")
         async_to_sync(self.channel_layer.group_add)("movie", self.channel_name)
 
     def disconnect(self, close_code):

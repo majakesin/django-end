@@ -1,3 +1,10 @@
+import ssl
+import urllib
+from urllib.parse import urlparse
+
+import urllib3
+from django.core.files import File
+from django.core.files.temp import NamedTemporaryFile
 from django.contrib.auth.models import User
 
 # Create your views here.
@@ -59,10 +66,16 @@ class MovieView(mixins.ListModelMixin,
         movieSave = Movie(title=title, description=description)
         movieSave.save()
         movieSave.genres.set(genres)
-        if request.POST['cover_image']:
+        try:
             movieSave.image_url_omdb = request.POST['cover_image']
-        else:
-            movieSave.cover_image.set(request.FILES['cover_image'])
+            ssl._create_default_https_context = ssl._create_unverified_context
+            img_temp = NamedTemporaryFile(delete=True)
+            img_temp.write(urllib.request.urlopen(movieSave.image_url_omdb).read())
+            img_temp.flush()
+            name = urlparse(movieSave.image_url_omdb).path.split('/')[-1]
+            movieSave.cover_image.save(name, File(img_temp))
+        except:
+            movieSave.cover_image = request.FILES['cover_image']
 
         movieSave.save()
 

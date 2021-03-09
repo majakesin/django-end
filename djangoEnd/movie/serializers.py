@@ -1,6 +1,10 @@
+import urllib.request
+import ssl
+import os
+from pathlib import Path
 from django_elasticsearch_dsl_drf.serializers import DocumentSerializer
+from easy_thumbnails.files import get_thumbnailer
 from rest_framework import serializers
-
 from .documents.movie import MovieDocument
 from .models import Movie, Genre, Comments, WatchedMovies, LikeDislikeOption
 
@@ -27,20 +31,41 @@ class MovieSerializerPopular(serializers.ModelSerializer, LikedMoviesSerializer)
                   'likes')
 
 
-class MovieRelatedSerializer(serializers.ModelSerializer):
+class ListPhotoSerializer():
+    def set_list_photo(self, obj):
+        try:
+            return get_thumbnailer(obj.cover_image)['list_image'].url
+        except:
+            return None
+
+
+class InfoPhotoSerializer():
+    def set_info_photo(self, obj):
+        try:
+            return get_thumbnailer(obj.cover_image)['info_image'].url
+        except:
+            return None
+
+
+class MovieRelatedSerializer(serializers.ModelSerializer, InfoPhotoSerializer):
+    info_photo = serializers.SerializerMethodField("set_info_photo")
+
     class Meta:
         model = Movie
-        fields = ('id', 'title', 'description', 'cover_image', 'genres','image_url_omdb'
+        fields = ('id', 'title', 'description', 'cover_image', 'genres', 'image_url_omdb', 'info_photo'
                   )
 
 
-class MovieSerializer(serializers.ModelSerializer, MovieWatchedSerializer, LikedMoviesSerializer):
+class MovieSerializer(serializers.ModelSerializer, MovieWatchedSerializer, LikedMoviesSerializer, ListPhotoSerializer,
+                      InfoPhotoSerializer):
     watched = serializers.SerializerMethodField('has_watched')
+    list_photo = serializers.SerializerMethodField("set_list_photo")
+    info_photo = serializers.SerializerMethodField("set_info_photo")
 
     class Meta:
         model = Movie
         fields = ('id', 'title', 'description', 'cover_image', 'genres',
-                  'number_of_views', 'watched','image_url_omdb')
+                  'number_of_views', 'watched', 'image_url_omdb', 'list_photo', 'info_photo')
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -59,6 +84,7 @@ class WatchedMovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = WatchedMovies
         fields = '__all__'
+
 
 class MovieElasticSearchSerializer(DocumentSerializer):
     class Meta(object):

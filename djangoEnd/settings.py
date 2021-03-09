@@ -68,9 +68,19 @@ INSTALLED_APPS = [
     'django_filters',
     'channels',
     'django_celery_results',
+    'easy_thumbnails',
+
 ]
 
+#thumbnails
+THUMBNAIL_ALIASES = {
+    '': {
+        'list_image': {'size': (200, 200)},
+        'info_image': {'size': (400, 400)}
+    },
+}
 
+THUMBNAIL_DEBUG = True
 # for elastic search
 ELASTICSEARCH_DSL = {
     'default': {

@@ -47,6 +47,14 @@ def send_email_fun(subject, content, email_to):
     email.fail_silenty = False
     email.send()
 
+def createImageFromUrl(movie,request):
+    movie.image_url_omdb = request.POST['cover_image']
+    ssl._create_default_https_context = ssl._create_unverified_context
+    img_temp = NamedTemporaryFile(delete=True)
+    img_temp.write(urllib.request.urlopen(movie.image_url_omdb).read())
+    img_temp.flush()
+    name = urlparse(movie.image_url_omdb).path.split('/')[-1]
+    movie.cover_image.save(name, File(img_temp))
 
 class MovieView(mixins.ListModelMixin,
                 mixins.RetrieveModelMixin,
@@ -67,13 +75,7 @@ class MovieView(mixins.ListModelMixin,
         movieSave.save()
         movieSave.genres.set(genres)
         try:
-            movieSave.image_url_omdb = request.POST['cover_image']
-            ssl._create_default_https_context = ssl._create_unverified_context
-            img_temp = NamedTemporaryFile(delete=True)
-            img_temp.write(urllib.request.urlopen(movieSave.image_url_omdb).read())
-            img_temp.flush()
-            name = urlparse(movieSave.image_url_omdb).path.split('/')[-1]
-            movieSave.cover_image.save(name, File(img_temp))
+            createImageFromUrl(movieSave,request)
         except:
             movieSave.cover_image = request.FILES['cover_image']
 

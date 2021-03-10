@@ -1,11 +1,7 @@
-from enum import Enum
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.translation import ugettext, ugettext_lazy as _
-from easy_thumbnails.fields import ThumbnailerImageField
 
-from six import python_2_unicode_compatible
 
 
 def upload_path(instance, filename):
@@ -16,6 +12,11 @@ class LikeDislikeOption(models.Model):
     movie_id = models.IntegerField()
     type = models.BooleanField()
     user_id = models.EmailField()
+
+    class Meta:
+        app_label = 'movie'
+
+
 
 
 class Genre(models.Model):

@@ -69,8 +69,12 @@ INSTALLED_APPS = [
     'channels',
     'django_celery_results',
     'easy_thumbnails',
+    'django_nose',
+
 
 ]
+
+TEST_RUNNER = "django_nose.NoseTestSuiteRunner"
 
 #thumbnails
 THUMBNAIL_ALIASES = {
@@ -153,6 +157,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', 'root'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', 3306),
+        'TEST': {
+            'NAME': 'test_database_movie',
+        }
     }
 }
 

@@ -16,7 +16,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, status
 
-
 from .filters import MovieFilter
 from .models import Movie, Genre, LikeDislikeOption, Comments, WatchedMovies
 from .serializers import MovieSerializer, GenreSerializer, CommentsSerializer, MovieSerializerPopular, \
@@ -43,11 +42,12 @@ class GenreView(mixins.ListModelMixin, GenericViewSet):
 
 
 def send_email_fun(subject, content, email_to):
-    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, [email_to,])
+    email = EmailMessage(subject, content, settings.EMAIL_HOST_USER, [email_to, ])
     email.fail_silenty = False
     email.send()
 
-def createImageFromUrl(movie,request):
+
+def createImageFromUrl(movie, request):
     movie.image_url_omdb = request.POST['cover_image']
     ssl._create_default_https_context = ssl._create_unverified_context
     img_temp = NamedTemporaryFile(delete=True)
@@ -55,6 +55,7 @@ def createImageFromUrl(movie,request):
     img_temp.flush()
     name = urlparse(movie.image_url_omdb).path.split('/')[-1]
     movie.cover_image.save(name, File(img_temp))
+
 
 class MovieView(mixins.ListModelMixin,
                 mixins.RetrieveModelMixin,
@@ -75,7 +76,7 @@ class MovieView(mixins.ListModelMixin,
         movieSave.save()
         movieSave.genres.set(genres)
         try:
-            createImageFromUrl(movieSave,request)
+            createImageFromUrl(movieSave, request)
         except:
             movieSave.cover_image = request.FILES['cover_image']
 
@@ -168,59 +169,58 @@ class WatchedMovieView(mixins.ListModelMixin,
         watchedMovie.save()
         return Response(status=status.HTTP_200_OK)
 
+# class MovieElasticSearchView(BaseDocumentViewSet):
+#   document = MovieDocument
+#  serializer_class = MovieElasticSearchSerializer
+# lookup_field = 'id'
+# pagination_class = PaginationMovie
 
-#class MovieElasticSearchView(BaseDocumentViewSet):
- #   document = MovieDocument
-  #  serializer_class = MovieElasticSearchSerializer
-   # lookup_field = 'id'
-   # pagination_class = PaginationMovie
+# filter_backends = [
+#    FilteringFilterBackend,
+#   IdsFilterBackend,
+#  OrderingFilterBackend,
+# DefaultOrderingFilterBackend,
+# SearchFilterBackend,
+# ]
 
-   # filter_backends = [
-    #    FilteringFilterBackend,
-     #   IdsFilterBackend,
-      #  OrderingFilterBackend,
-       # DefaultOrderingFilterBackend,
-       # SearchFilterBackend,
-   # ]
+# search_fields = (
+#   'title',
+#  'description',
+# 'genres',
+# )
 
-    #search_fields = (
-     #   'title',
-      #  'description',
-       # 'genres',
-    #)
+# filter_fields = {
+#   'id': {
+#      'field': 'id',
+#     'lookups': [
+#        LOOKUP_FILTER_RANGE,
+#       LOOKUP_QUERY_IN,
+#      LOOKUP_QUERY_GT,
+#     LOOKUP_QUERY_GTE,
+#    LOOKUP_QUERY_LT,
+#   LOOKUP_QUERY_LTE,
+# ],
+# },
+# 'title': 'title.raw',
+# 'description': 'description.raw',
 
-    #filter_fields = {
-     #   'id': {
-      #      'field': 'id',
-       #     'lookups': [
-        #        LOOKUP_FILTER_RANGE,
-         #       LOOKUP_QUERY_IN,
-          #      LOOKUP_QUERY_GT,
-           #     LOOKUP_QUERY_GTE,
-            #    LOOKUP_QUERY_LT,
-             #   LOOKUP_QUERY_LTE,
-           # ],
-       # },
-       # 'title': 'title.raw',
-       # 'description': 'description.raw',
+# 'genres': {
+#   'field': 'genres',
 
-        #'genres': {
-         #   'field': 'genres',
-
-          #  'lookups': [
-           #     LOOKUP_FILTER_TERMS,
-            #    LOOKUP_FILTER_PREFIX,
-             #   LOOKUP_FILTER_WILDCARD,
-             #   LOOKUP_QUERY_IN,
-              #  LOOKUP_QUERY_EXCLUDE,
-           # ],
-       # },
+#  'lookups': [
+#     LOOKUP_FILTER_TERMS,
+#    LOOKUP_FILTER_PREFIX,
+#   LOOKUP_FILTER_WILDCARD,
+#   LOOKUP_QUERY_IN,
+#  LOOKUP_QUERY_EXCLUDE,
+# ],
+# },
 
 
-   # }
-  #  ordering_fields = {
-    #    'id': 'id',
-    #    'title': 'title.raw',
-     #   'description': 'description.raw',
-   # }
-   # ordering =('id',)
+# }
+#  ordering_fields = {
+#    'id': 'id',
+#    'title': 'title.raw',
+#   'description': 'description.raw',
+# }
+# ordering =('id',)

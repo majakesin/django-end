@@ -26,6 +26,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('jwtAuthentication.urls')),
     path('api/movies/', include(routerMovie.urls)),
-    path('api/movies/like/', LikeDislikeView.as_view()),
+    path('api/movies/like/', LikeDislikeView.as_view(), name="like"),
 
 ]+ static(settings.MEDIA_URL, document_root= settings.MEDIA_ROOT)
